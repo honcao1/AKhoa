@@ -63,6 +63,7 @@ void loop() {
       if(dataSim.indexOf("rst")>=0 || dataSim.indexOf("Rst")>=0) {
         //Serial.println("Rest esp");
         rst_on; delay(500); rst_off;
+//        wifi.print("rst");
         sendSMS("Reset thanh cong.");
       }
 
@@ -259,6 +260,7 @@ void getDataWifi() {
     if(dataWifi.indexOf("sdt")>=0) checksdt = 1;
     if(dataWifi.indexOf("time")>=0) checkTime = 1;
     if(dataWifi.indexOf("setTime")>=0) checkSetTime = 1;
+    if(dataWifi.indexOf("rst")>=0) {btnStatut=0; led_off;}
   }
 }
 

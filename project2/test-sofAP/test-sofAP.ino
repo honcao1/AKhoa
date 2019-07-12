@@ -2,7 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
-
+#include <ESP8266mDNS.h>
 #include "logo.h"
 
 ESP8266WebServer server(3004);
@@ -12,7 +12,7 @@ const byte TX = D2;
  
 SoftwareSerial mySerial = SoftwareSerial(RX, TX); 
 
-const char* ssid = "Hub1";
+const char* ssid = "Hub2";
 const char* passphrase = "12345678"; 
 
 String btn;
@@ -48,7 +48,7 @@ void handleCtrl() {
   }
   content += "</body>\r\n";
   content += "</html>\r\n";
-  server.send(200, "text/html", content);  
+  server.send(200, "text/html", content);
 }
 
 void handleRoot() {
@@ -86,7 +86,7 @@ void handleRoot() {
     content += "<label>PASS: </label><input name='pass' length=64><br></br>\r\n";
     content += "<input type='submit' value='Gui'><br>\r\n</form></br>\r\n";
     content += "<form method='get' action='sim'>\r\n";
-    content += "<label>SDT: </label><input name='sdt' length=32><br></br>\r\n";
+    content += "<label>SDT: </label><input name='sdt' length=32 type='number' size='10'><br></br>\r\n";
     content += "<input type='submit' value='Gui'><br>\r\n</form></br>\r\n";
     content += "<form method='get' action='time'>\r\n";
     content += "<label>START: </label><input name='TimeStart' type='time' value='";
@@ -104,81 +104,7 @@ void handleRoot() {
 }
 
 void handleCamera() {
-    for(int i=0; i<16; ++i){
-      lengthCam[i] = (int)EEPROM.read(i+346);
-    }
-    
-    eCamera1 ="";
-    for (int i = 0; i < lengthCam[0]; ++i) {
-      eCamera1 += (char)EEPROM.read(i+106);
-    }
-
-    eCamera2="";
-    for (int i = 0; i < lengthCam[1]; ++i) {
-      eCamera2 += char(EEPROM.read(i+121));
-    }
-
-    eCamera3="";
-    for (int i = 0; i < lengthCam[2]; ++i) {
-      eCamera3 += char(EEPROM.read(i+136));
-    }
-
-    eCamera4="";
-    for (int i = 0; i < lengthCam[3]; ++i) {
-      eCamera4 += char(EEPROM.read(i+151));
-    }
-    eCamera5="";
-    for (int i = 0; i < lengthCam[4]; ++i) {
-      eCamera5 += char(EEPROM.read(i+166));
-    }
-    eCamera6="";
-    for (int i = 0; i < lengthCam[5]; ++i) {
-      eCamera6 += char(EEPROM.read(i+181));
-    }
-    eCamera7="";
-    for (int i = 0; i < lengthCam[6]; ++i) {
-      eCamera7 += char(EEPROM.read(i+196));
-    }
-    eCamera8="";
-    for (int i = 0; i < lengthCam[7]; ++i) {
-      eCamera8 += char(EEPROM.read(i+211));
-    }
-    eCamera9="";
-    for (int i = 0; i < lengthCam[8]; ++i) {
-      eCamera9 += char(EEPROM.read(i+226));
-    }
-    eCamera10="";
-    for (int i = 0; i < lengthCam[9]; ++i) {
-      eCamera10 += char(EEPROM.read(i+241));
-    }
-    eCamera11="";
-    for (int i = 0; i < lengthCam[10]; ++i) {
-      eCamera11 += char(EEPROM.read(i+256));
-    }
-    eCamera12="";
-    for (int i = 0; i < lengthCam[11]; ++i) {
-      eCamera12 += char(EEPROM.read(i+271));
-    }
-    eCamera13="";
-    for (int i = 0; i < lengthCam[12]; ++i) {
-      eCamera13 += char(EEPROM.read(i+286));
-    }
-
-    eCamera14="";
-    for (int i = 0; i < lengthCam[13]; ++i) {
-      eCamera14 += char(EEPROM.read(i+301));
-    }
-
-    eCamera15="";
-    for (int i = 0; i < lengthCam[14]; ++i) {
-      eCamera15 += char(EEPROM.read(i+316));
-    }
-
-    eCamera16="";
-    for (int i = 0; i < lengthCam[15]; ++i) {
-      eCamera16 += char(EEPROM.read(i+331));
-    }
-
+    getCamera();
     content = "<!DOCTYPE HTML>\r\n";
     content += "<html>\r\n"; 
     content += "<form method='get' action='kvcamera'>\r\n";
@@ -265,6 +191,8 @@ void handleWifi() {
     content = "{\"Success\":\"saved to eeprom....... reset to boot into new wifi\"}";
   }
   server.send(200, "application/json", content);
+  delay(200);
+  ESP.restart();
 }
 
 void handleSim() {
@@ -315,7 +243,9 @@ void handleTime() {
     delay(1000);
     content = "{\"Success\":\"ok\"}";
   }
-  server.send(200, "application/json", content);
+//  server.send(200, "application/json", content);
+    delay(1000);
+    handleRoot();
 }
 
 void handleSetTime() {
@@ -475,8 +405,10 @@ void handleKvCamera(){
   }
   
   EEPROM.commit();
-  content = "{\"Success\":\"ok\"}";
-  server.send(200, "application/json", content);
+//  content = "{\"Success\":\"ok\"}";
+//  server.send(200, "application/json", content);
+  delay(1000);
+  handleCamera();
 }
 /*
 void handleMess() {
@@ -504,6 +436,8 @@ void handleMess() {
   String qmess = server.arg("id");
   String qtime = server.arg("eTime");
 
+  getCamera(); delay(1000);
+  
   if(qmess.length() > 0) {
     Serial.println(qmess);
     Serial.println("");
@@ -564,6 +498,83 @@ void testWifi(void) {
   }
 } 
 
+void getCamera(){
+  for(int i=0; i<16; ++i){
+      lengthCam[i] = (int)EEPROM.read(i+346);
+    }
+    
+    eCamera1 ="";
+    for (int i = 0; i < lengthCam[0]; ++i) {
+      eCamera1 += (char)EEPROM.read(i+106);
+    }
+
+    eCamera2="";
+    for (int i = 0; i < lengthCam[1]; ++i) {
+      eCamera2 += char(EEPROM.read(i+121));
+    }
+
+    eCamera3="";
+    for (int i = 0; i < lengthCam[2]; ++i) {
+      eCamera3 += char(EEPROM.read(i+136));
+    }
+
+    eCamera4="";
+    for (int i = 0; i < lengthCam[3]; ++i) {
+      eCamera4 += char(EEPROM.read(i+151));
+    }
+    eCamera5="";
+    for (int i = 0; i < lengthCam[4]; ++i) {
+      eCamera5 += char(EEPROM.read(i+166));
+    }
+    eCamera6="";
+    for (int i = 0; i < lengthCam[5]; ++i) {
+      eCamera6 += char(EEPROM.read(i+181));
+    }
+    eCamera7="";
+    for (int i = 0; i < lengthCam[6]; ++i) {
+      eCamera7 += char(EEPROM.read(i+196));
+    }
+    eCamera8="";
+    for (int i = 0; i < lengthCam[7]; ++i) {
+      eCamera8 += char(EEPROM.read(i+211));
+    }
+    eCamera9="";
+    for (int i = 0; i < lengthCam[8]; ++i) {
+      eCamera9 += char(EEPROM.read(i+226));
+    }
+    eCamera10="";
+    for (int i = 0; i < lengthCam[9]; ++i) {
+      eCamera10 += char(EEPROM.read(i+241));
+    }
+    eCamera11="";
+    for (int i = 0; i < lengthCam[10]; ++i) {
+      eCamera11 += char(EEPROM.read(i+256));
+    }
+    eCamera12="";
+    for (int i = 0; i < lengthCam[11]; ++i) {
+      eCamera12 += char(EEPROM.read(i+271));
+    }
+    eCamera13="";
+    for (int i = 0; i < lengthCam[12]; ++i) {
+      eCamera13 += char(EEPROM.read(i+286));
+    }
+
+    eCamera14="";
+    for (int i = 0; i < lengthCam[13]; ++i) {
+      eCamera14 += char(EEPROM.read(i+301));
+    }
+
+    eCamera15="";
+    for (int i = 0; i < lengthCam[14]; ++i) {
+      eCamera15 += char(EEPROM.read(i+316));
+    }
+
+    eCamera16="";
+    for (int i = 0; i < lengthCam[15]; ++i) {
+      eCamera16 += char(EEPROM.read(i+331));
+    }
+}
+
 void setup() {
   Serial.begin(115200);
   mySerial.begin(9600);
@@ -598,6 +609,14 @@ void setup() {
   Serial.println(WiFi.localIP());
   Serial.print("SoftAP IP: ");
   Serial.println(WiFi.softAPIP());
+
+  //khi reset thi trang thai lun off
+  mySerial.print("rst");
+
+  //mDNS
+  if (!MDNS.begin("esp8266")) {
+    Serial.println("Error setting up MDNS responder!");
+  }
 
   server.on("/", handleCtrl);
   server.on("/on", [](){
